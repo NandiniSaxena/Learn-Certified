@@ -4,12 +4,15 @@ namespace App\Http\Controllers;
 
 use Inertia\Inertia;
 use App\Models\Certification;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class HomeController extends Controller
 {
     public function index()
     {
-        $certifications = Certification::all(); // or limit if too many
+        // Eager load subCertifications so they are available in the frontend dropdowns
+        $certifications = Certification::with('subCertifications')->get();
 
         return Inertia::render('User/Home', [
             'certifications' => $certifications,
@@ -18,25 +21,24 @@ class HomeController extends Controller
 
     public function allCourses()
     {
-        // For /all-courses – same as home or list more
         return Inertia::render('AllCourses', [
-            'certifications' => Certification::all(),
+            'certifications' => Certification::with('subCertifications')->get(),
         ]);
     }
 
     public function showCertification($slug)
     {
-        $cert = Certification::where('slug', $slug)->firstOrFail();
+        $cert = Certification::with('subCertifications')->where('slug', $slug)->firstOrFail();
 
-        return Inertia::render('User.CertificationShow', [
+        return Inertia::render('User/CertificationShow', [
             'certification' => $cert,
         ]);
     }
 
-
-        //user dashboard
-
-        public function store(Request $request)
+    /**
+     * Handle authentication for the user dashboard.
+     */
+    public function store(Request $request)
     {
         $credentials = $request->validate([
             'email' => ['required', 'email'],
@@ -45,7 +47,12 @@ class HomeController extends Controller
 
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
-            // Redirect to /dashboard after successful login
+
+            // Logic for admin vs user redirect
+            if (Auth::user()->email === 'admin@gmail.com') {
+                return redirect()->route('admin.dashboard');
+            }
+
             return redirect()->intended('/dashboard');
         }
 

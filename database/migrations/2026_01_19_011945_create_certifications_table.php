@@ -16,6 +16,7 @@ return new class extends Migration
         $table->string('name');           // e.g. Cisco
         $table->string('slug')->unique(); // e.g. cisco
         $table->text('description')->nullable();
+        $table->string('image')->nullable();
         $table->timestamps();
     });
 }
